@@ -1,5 +1,5 @@
 generator client {
-  provider        = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -8,21 +8,91 @@ datasource db {
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
-  posts Post[]
+  address       String    @id
+  twitterHandle String?
+  discordHandle String?
+  referrer      Referrer?
+  referee       Referee[] // a user can be referred to multiple campaigns
+  payouts       Payout[]
 }
 
-model Post {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  viewCount Int      @default(0)
-  author    User?    @relation(fields: [authorId], references: [id])
-  authorId  Int?
+model Referrer {
+  address  String    @id
+  user     User      @relation(fields: [address], references: [address])
+  referred Referee[]
 }
 
+model Referee {
+  id         String            @id @default(uuid())
+  address    String
+  user       User              @relation(fields: [address], references: [address])
+  referrerAddress String
+  referrer   Referrer          @relation(fields: [referrerAddress], references: [address])
+  campaignId String
+  campaign   Campaign          @relation(fields: [campaignId], references: [id])
+  action     CompletedAction[]
+}
+
+model Protocol {
+  id             String @id
+  name           String
+  logo           String
+  primaryColor   String
+  secondaryColor String
+  social         String
+  emoji          String
+  baseUrl        String
+}
+
+model Campaign {
+  id             String          @id @default(uuid())
+  slug           String          @unique
+  referee        Referee[]
+  allowedActions AllowedAction[]
+}
+
+model CompletedAction {
+  id              String        @id
+  refereeId       String
+  referee         Referee       @relation(fields: [refereeId], references: [id])
+  allowedActionId String
+  allowedAction   AllowedAction @relation(fields: [allowedActionId], references: [id])
+}
+
+model AllowedAction {
+  id               String            @id @default(uuid())
+  description      String
+  completedActions CompletedAction[]
+  campaignId       String
+  campaign         Campaign          @relation(fields: [campaignId], references: [id])
+}
+
+model Payout {
+  id          String        @id @default(uuid())
+  status      String
+  creation    DateTime
+  expiration  DateTime?
+  tokens      PayoutToken[]
+  userAddress String
+  User        User          @relation(fields: [userAddress], references: [address])
+}
+
+model PayoutToken {
+  id       String  @id
+  payoutId String
+  payout   Payout  @relation(fields: [payoutId], references: [id])
+  tokenId  String
+  token    Token   @relation(fields: [tokenId], references: [id])
+  priceUSD String?
+  amount   String?
+}
+
+model Token {
+  id          String        @id @default(uuid())
+  symbol      String
+  name        String
+  address     String
+  decimals    String
+  chainId     Int
+  PayoutToken PayoutToken[]
+}

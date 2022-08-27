@@ -14,8 +14,8 @@ interface User {
 }
 
 interface Referee extends User {
-    campaign: Campaign;
-    referrer: Referrer;
+    campaign: Array<Campaign>;
+    referrer: Array<Referrer>;
 }
 
 interface Referrer extends User {
@@ -74,8 +74,8 @@ interface TokenForPayout extends Token {
 interface TokenTotal {
     id: string;
     total: Array<string>; // if USD, total will be length 0. If denomination is token, then 
-    denomination: "USD" | "token";
     tokens: Array<Token>;
+    date: Date;
 }
 
 interface Token {
@@ -83,6 +83,12 @@ interface Token {
     amount: string;
     decimals: number;
     price: TokenPrice;
+}
+
+interface TokenMatchedToUSD {
+    id: string;
+    usd: string;
+    decimals: string;
 }
 
 interface TokenPrice {
@@ -100,4 +106,10 @@ interface Payout {
     campaign: Campaign;
     date: Date;
     action: Action;
+}
+
+
+interface TotalPayouts {
+    level: 'campaign' | 'protocol' | 'root';
+
 }
