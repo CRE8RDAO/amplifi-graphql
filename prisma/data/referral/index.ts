@@ -1,10 +1,7 @@
 import { resolve } from 'path';
 import { PrismaClient } from '@prisma/client';
 import {
-  indexHeaders,
-  parseCSV,
-  seperateCSV,
-  verifyHeaders,
+  fetchCSV,
 } from '../../utils/csv';
 import { fetchGithubSybil, TwitterToAddresses } from '../verified-twitter';
 import { isEthereumAddress } from 'class-validator';
@@ -19,41 +16,19 @@ interface Referral {
 
 export const seedReferrals = async (prisma: PrismaClient) => {
   const rawReferrals = await fetchReferrals();
-  createReferrals(prisma, rawReferrals);
+  await createReferrals(prisma, rawReferrals);
 };
 
 const fetchReferrals = async (): Promise<Referral[]> => {
   const fileLocation = resolve(__dirname, './referral.csv');
-  const rawReferrals = await parseCSV(fileLocation);
-  if (rawReferrals.length < 2) {
-    throw fileLocation + 'has no data';
-  }
-  const { headers, data } = seperateCSV(rawReferrals);
-  const EXPECTED_HEADERS = [
+  const referralHeaders = [
     'Referee Address',
     'UTM_CAMPAIGN',
     'UTM_CONTENT',
     'UTM_SOURCE',
     'Entry Date',
   ];
-  try {
-    verifyHeaders(headers, EXPECTED_HEADERS);
-  } catch (e) {
-    throw fileLocation + ':' + e;
-  }
-  const headersToPos = indexHeaders(headers, EXPECTED_HEADERS);
-  // @ts-ignore
-  const referrals: Referral[] = data.map((r) => {
-    let referral = {};
-    for (let h of EXPECTED_HEADERS) {
-      referral = {
-        ...referral,
-        [h]: r[headersToPos[h]],
-      };
-    }
-    return referral;
-  });
-  return referrals;
+  return fetchCSV<Referral>(fileLocation, referralHeaders)
 };
 
 const createReferrals = async (
@@ -81,6 +56,7 @@ const createUsers = async (
           twitterHandle: addressToTwitter[a]
         },
       });
+      console.log(`Created user with id: ${a}`);
     } catch (e) {
     }
   }
@@ -92,6 +68,7 @@ const createUsers = async (
             address: u['Referee Address'],
           },
         });
+        console.log(`Created user with id: ${u['Referee Address']}`);
       } catch (e) {
         
       }
@@ -214,6 +191,6 @@ const getReferrerAddress = (u: Referral, twitterToAddresses: TwitterToAddresses)
 const getCampaignSlug = (user: Referral) => {
   const campaignSlug = user.UTM_CAMPAIGN;
   const protocolSlug = user.UTM_SOURCE;
-  return protocolSlug + '-' + campaignSlug
+  return (protocolSlug + '-' + campaignSlug).toLowerCase()
 }
 

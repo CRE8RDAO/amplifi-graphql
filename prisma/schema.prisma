@@ -46,9 +46,11 @@ model Protocol {
 
 model Campaign {
   id             String          @id @default(uuid())
-  slug           String          @unique
+  //protocol-campaign
+  slug           String          @unique 
   referee        Referee[]
   allowedActions AllowedAction[]
+  payouts Payout[]
 }
 
 model CompletedAction {
@@ -70,21 +72,23 @@ model AllowedAction {
 model Payout {
   id          String        @id @default(uuid())
   status      String
-  creation    DateTime
+  creation    DateTime @default(now())
   expiration  DateTime?
   tokens      PayoutToken[]
   userAddress String
   User        User          @relation(fields: [userAddress], references: [address])
+  campaignId String
+  campaign Campaign @relation(fields: [campaignId], references: [id])
 }
 
 model PayoutToken {
-  id       String  @id
+  id       String  @id @default(uuid())
   payoutId String
   payout   Payout  @relation(fields: [payoutId], references: [id])
   tokenId  String
   token    Token   @relation(fields: [tokenId], references: [id])
-  priceUSD String?
-  amount   String?
+  amountUSD Decimal?  //payment as USD paid in token
+  amountNum   String? //payment as number of tokens
 }
 
 model Token {
@@ -92,7 +96,7 @@ model Token {
   symbol      String
   name        String
   address     String
-  decimals    String
+  decimals    Int
   chainId     Int
   PayoutToken PayoutToken[]
 }
